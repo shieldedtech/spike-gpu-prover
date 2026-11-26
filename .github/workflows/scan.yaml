@@ -42,28 +42,7 @@ jobs:
       statuses: write
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
-      # zizmor's online audits read tags of the private shared workflows in
-      # shieldedtech/.github, which GITHUB_TOKEN cannot see.
-      - name: Resolve repository name
-        id: repo
-        run: echo "name=${GITHUB_REPOSITORY#*/}" >> "$GITHUB_OUTPUT"
-      - name: Create read-only scanner token
-        id: scanner-token
-        uses: actions/create-github-app-token@f418cff399f7aef4c2f0ad47e25ca7a6abbdd6fc  # v3.4.0
-        with:
-          app-id: ${{ secrets.SHIELDEDTECH_IAC_APP_ID }}
-          private-key: ${{ secrets.SHIELDEDTECH_IAC_APP_PEM }}
-          owner: shieldedtech
-          repositories: |
-            ${{ steps.repo.outputs.name }}
-            .github
-          permission-contents: read
-      - name: Verify private workflow metadata access
-        env:
-          GH_TOKEN: ${{ steps.scanner-token.outputs.token }}
-        run: gh api 'repos/shieldedtech/.github/tags?per_page=1' --silent
       - name: Scan and upload SARIF
         uses: midnightntwrk/upload-sarif-github-action@7fe90dc28a92dd00d353fa49c8e9eedc3a207799  # SHA-pinned; dependabot bumps
         with:
-          github_token: ${{ steps.scanner-token.outputs.token }}
           fail_severity: critical
