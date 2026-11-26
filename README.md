@@ -1,118 +1,64 @@
-# Shielded Technologies Template Repository
+# spike-gpu-prover
 
-GitHub template for new Shielded Technologies repositories. Pre-wires the baseline files, security scanning, and contributor policies that every project under [`shieldedtech`](https://github.com/shieldedtech) is expected to have.
+GPU proving for [midnight-proofs](https://github.com/midnightntwrk/midnight-zk),
+kept outside midnight-zk. midnight-zk carries only a small hook layer (the
+`Accelerator` trait behind the `accel` feature: MSM, batched MSM, FFT,
+inverse FFT, the quotient, and a per-proof begin and end signal). The
+backends live here, or in their authors' own repos.
 
-## What you get
+This is a prototype for measurement and discussion, not for production use.
 
-| File | Purpose |
-| --- | --- |
-| `LICENSE` | Apache-2.0. |
-| `SECURITY.md` | Disclosure policy + private vulnerability reporting flow. |
-| `CONTRIBUTING.md` | Contribution process, DCO, SPDX header template. |
-| `CODE_OF_CONDUCT.md` | Contributor Covenant v2.1. |
-| `CODEOWNERS` | Default review ownership for the meta-files. |
-| `AGENTS.md` | Agent entry point: points at the `shieldedtech/agent-rules` floor, holds local rules. |
-| `CLAUDE.md` | One line, `@AGENTS.md`, so Claude Code loads the same file. |
-| `.github/agent-rules.json` | Machine-checked issue/PR constraints (assignee, labels, issue link). Enforced by the `shielded-core-rules` plugin hook at `gh pr create` / `gh issue create`. |
-| `CHANGELOG.md` | Keep-a-Changelog seed. |
-| `SUPPORT.md` | Splits "I have a question" from "I found a bug". |
-| `NOTICE` | Attribution file (Apache-2.0 convention). |
-| `THIRD_PARTY_NOTICES.md` | Stub for third-party license disclosures. |
-| `.editorconfig` | Indent / line-ending baseline. |
-| `.gitattributes` | LF line endings, binary markers. |
-| `.gitignore` | macOS / Linux / Windows OS junk, common editors, Rust (`target/`), TypeScript/Node (`node_modules/`, `dist/`, `.env*`), Compact `managed/` output. |
-| `.envrc` | Local git config (signed commits). Opt-in via `direnv allow`. |
-| `.github/ISSUE_TEMPLATE/*` | Bug, docs, feature templates + `config.yml`. |
-| `.github/PULL_REQUEST_TEMPLATE/` | PR checklist. |
-| `.github/dependabot.yml` | GitHub Actions updates by default; language ecosystems commented for opt-in. |
-| `.github/release.yml` | Auto-categorized release notes. |
-| `.github/workflows/scan.yaml` | Shared org scan action (`midnightntwrk/upload-sarif-github-action`, SHA-pinned): OpenGrep (SAST) + OSSF Scorecard + Checkov (IaC) + zizmor (Actions) + Trivy (vuln) + gitleaks (secrets) → SARIF to code scanning. CodeQL runs separately via GitHub Default Setup. |
-| `scripts/init-new-repo.sh` | One-shot setup for a new downstream repo (SPDX headers, find/replace). |
-| `docs/adr/` | Architecture Decision Records — `0000-template.md` + index. Copy the template for each new decision. |
+## Contents
 
-## Using this template
+| Path | What it is |
+|---|---|
+| `accel-metal/` | An Apple Metal backend: batched Pippenger MSM over shared bases, NTT and the quotient on the GPU, with a GPU/CPU split for MSMs. |
+| `seungheon-adapter/` | An adapter that runs SeungHeon Oh's Metal backend ([`midnight-metal`](https://github.com/SeungheonOh/midnight-zk/tree/metal-prover/metal)) unchanged behind the same hooks. |
+| `results/` | Benchmarks on real Compact circuits (anonymised), with the method. |
 
-1. Click **Use this template → Create a new repository** in the GitHub UI, or:
+The hook layer and the GPU prover design come from Charles Hoskinson's
+[midnight-zk #667](https://github.com/midnightntwrk/midnight-zk/pull/667)
+(CUDA backend) and SeungHeon Oh's Metal backend for it.
 
-   ```bash
-   gh repo create shieldedtech/<your-repo> --template shieldedtech/shielded-template-repo --public
-   ```
+## Contract
 
-2. Clone the new repo and run the init script:
+A backend either returns exactly the value the stock CPU code would, or
+declines, and the stock code runs. The transcript, the blinding and every
+value the verifier sees come from the stock code. Each crate's tests check
+its results against the CPU reference (`midnight_proofs::accel::reference`)
+and check that proofs made with it verify and that tampered proofs do not.
 
-   ```bash
-   ./scripts/init-new-repo.sh
-   ```
+## Building
 
-   It will prompt for the repo name, replace `<REPO_NAME>` placeholders, and stage the SPDX header for new files.
-3. Configure repo settings (see [`docs/repo-settings.md`](#repo-settings-checklist) below).
+Until the hook layer is in a midnight-proofs release, both crates build
+against a midnight-zk checkout next to this one, on the branch with the
+hooks:
 
-## Repo settings checklist
-
-Set these on every new repo. The template can't enforce them — GitHub settings live outside the working tree.
-
-**Shortcut**: after pushing the first commit to `main`, run the canonical scripts
-from a clone of the (private) governance repo — they are deliberately not vendored
-here, so audited repos can't carry drifted copies:
-
-```bash
-git clone git@github.com:shieldedtech/open-source-governance.git
-./open-source-governance/scripts/apply-ruleset.sh shieldedtech/<your-repo>   # mirror "Base rules"
-./open-source-governance/scripts/audit-repo.sh shieldedtech/<your-repo>      # verify the baseline
+```sh
+git clone https://github.com/midnightntwrk/midnight-zk -b accel-hooks
+git clone https://github.com/shieldedtech/spike-gpu-prover
+cd spike-gpu-prover
+cargo test --release --workspace   # needs a Mac with Apple silicon
 ```
 
-Public repos are also re-audited on a schedule by the governance repo's
-re-certification workflow; failures go to the Open Source Committee.
+`midnight-metal` is fetched from SeungHeon's repository at a pinned commit.
 
-- **Settings → General → Template repository**: ON (only for this template itself).
-- **`Base rules` ruleset on `main`** (what `apply-ruleset.sh` mirrors):
-  - Pull request required: 1 approval, code-owner review, stale-review dismissal,
-    last-push approval, review-thread resolution.
-  - Code scanning (CodeQL) and code-quality gates.
-  - Require signed commits.
-  - Block force-push (`non_fast_forward`) and branch deletion.
-    (No required-status-check, linear-history, or tag rules — add repo-specific
-    required checks, e.g. the DCO App check, separately.)
-- **Settings → Code security**:
-  - Dependabot alerts + security updates: ON.
-  - Secret scanning + push protection: ON.
-  - Private vulnerability reporting: ON.
-- **Actions → General → Workflow permissions**: read-only default; workflows opt-in via `permissions:`.
-- **Rulesets**: disallow tag deletion; require signed tags on `v*`.
+## Results (M5 Max, 31 Compact circuits)
 
-## SPDX header
+Speed-up over the stock CPU prover on the same machine (median per k):
 
-Every source file should carry this header. The init script stages it for you.
+| k | circuits | Bob (`accel-metal`) | SeungHeon (own build) | Combined (`seungheon-adapter`) |
+|---|---:|---:|---:|---:|
+| 13 | 11 | 1.38x | 1.27x | 1.14x |
+| 14 | 9 | 1.71x | 1.52x | 1.36x |
+| 15 | 2 | 1.93x | 1.96x | 1.71x |
+| 16 | 1 | 2.15x | 2.66x | 2.26x |
+| 17 | 3 | 2.54x | 2.88x | 2.48x |
+| 18 | 2 | 2.14x | 2.85x | 2.55x |
+| 20 | 1 | 2.39x | 2.98x | 2.68x |
 
-```text
-SPDX-FileCopyrightText: Copyright (C) Shielded Technologies
-SPDX-License-Identifier: Apache-2.0
+See [`results/`](results/) for the data, the method and the caveats.
 
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
+## License
 
-    https://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
-```
-
-Use the comment syntax appropriate to the file format (`//`, `#`, `<!-- -->`, etc.).
-
-## Pinning convention for GitHub Actions
-
-All third-party actions in this template are pinned to a full commit SHA, with the human-readable tag in a trailing comment. Downstream repos must follow the same rule — version tags can be moved; commit SHAs cannot.
-
-```yaml
-- uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7.0.0
-```
-
-`dependabot.yml` keeps the SHAs current on a weekly cadence.
-
-## Provenance
-
-This template started as a fork of [`midnightntwrk/midnight-template-repo`](https://github.com/midnightntwrk/midnight-template-repo) (Apache-2.0). Significant changes: Contributor Covenant v2.1 upgrade, CLA → DCO, the org-maintained `midnightntwrk/upload-sarif-github-action` scan (OpenGrep, OSSF Scorecard, Checkov, zizmor, Trivy, gitleaks) with CodeQL via Default Setup, additional baseline files, and Shielded Technologies branding.
+Apache-2.0.

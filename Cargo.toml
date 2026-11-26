@@ -1,0 +1,33 @@
+# GPU proving for midnight-proofs, outside midnight-zk.
+#
+# Both crates implement the `Accelerator` trait of midnight-proofs (feature
+# `accel`). Until the hook layer is released, midnight-proofs and
+# midnight-curves come from a midnight-zk checkout next to this one, on the
+# branch with the hooks (see README.md).
+
+[workspace]
+resolver = "2"
+members = ["accel-metal", "seungheon-adapter"]
+
+[workspace.package]
+edition = "2024"
+license = "Apache-2.0"
+publish = false
+
+[workspace.dependencies]
+midnight-proofs = { version = "0.9.0-rc.1", features = ["accel"] }
+midnight-curves = "0.4.0-rc.1"
+# SeungHeon Oh's Metal backend (SeungheonOh/midnight-zk, `metal/`), used
+# unchanged.
+midnight-metal = { git = "https://github.com/SeungheonOh/midnight-zk", rev = "1b95798652120591eccb302d04e67d36593c0bbf" }
+
+# One copy of each, so `Fq` is one type across the hooks and both backends.
+[patch.crates-io]
+midnight-proofs = { path = "../midnight-zk/proofs" }
+midnight-curves = { path = "../midnight-zk/curves" }
+
+[patch."https://github.com/SeungheonOh/midnight-zk"]
+midnight-curves = { path = "../midnight-zk/curves" }
+
+[profile.release]
+debug = 1
