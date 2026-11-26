@@ -31,15 +31,18 @@ and check that proofs made with it verify and that tampered proofs do not.
 ## Building
 
 Until the hook layer is in a midnight-proofs release, both crates build
-against a midnight-zk checkout next to this one, on the branch with the
-hooks:
+against the hooks PR,
+[midnight-zk #696](https://github.com/midnightntwrk/midnight-zk/pull/696),
+pinned to a commit in `Cargo.toml`:
 
 ```sh
-git clone https://github.com/midnightntwrk/midnight-zk -b accel-hooks
 git clone https://github.com/shieldedtech/spike-gpu-prover
 cd spike-gpu-prover
 cargo test --release --workspace   # needs a Mac with Apple silicon
 ```
+
+To build against a local midnight-zk checkout instead, override the patches,
+for example with `--config 'patch.crates-io.midnight-proofs.path="../midnight-zk/proofs"'`.
 
 `midnight-metal` is fetched from SeungHeon's repository at a pinned commit.
 
