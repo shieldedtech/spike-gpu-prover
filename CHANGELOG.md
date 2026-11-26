@@ -9,13 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- `AGENTS.md`, `CLAUDE.md` (`@AGENTS.md`), and `.github/agent-rules.json`: the
-  agent entry point and the machine-checked issue/PR constraints that the
-  `shielded-core-rules` plugin enforces at `gh pr create` / `gh issue create`.
-  Contract: `shieldedtech/agent-rules`, `plugins/shielded-core-rules/docs/agent-rules-json.md`.
-
-### Removed
-
-- `scripts/audit-repo.sh` and `scripts/apply-ruleset.sh` — the canonical copies
-  now live in `shieldedtech/open-source-governance` so audited repos cannot
-  carry drifted copies; `scripts/init-new-repo.sh` and the README point there.
+- `accel-metal`: Apple Metal backend for the `midnight-proofs` accelerator hooks
+  (MSM, batched MSM, FFT, quotient).
+- `seungheon-adapter`: serves SeungHeon Oh's `midnight-metal` engine through the
+  same hooks.
+- `results/`: 31-circuit benchmark on an Apple M5 Max, 2026-11-23.
