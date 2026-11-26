@@ -10,7 +10,7 @@ permissions:
 jobs:
   add-to-project:
     name: Add issue to Shielded SRE Board (Backlog)
-    uses: shieldedtech/.github/.github/workflows/add-issue-to-project.yml@70648caf313acd9d28e785e69b5841951f122fa1
+    uses: shieldedtech/workflows/.github/workflows/add-issue-to-project.yml@b7aa239ad2d4c03da824642f173b1e0e9f4326a5
     secrets:
       PROJECT_TOKEN: ${{ secrets.PROJECT_TOKEN }}
     with:
